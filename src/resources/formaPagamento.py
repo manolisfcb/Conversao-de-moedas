@@ -17,5 +17,10 @@ class FormaPagamento:
     @staticmethod
     def pagamento_boleto():
         return FormaPagamento(Pagamento.BOLETO, 0.0145)
+    
+    
+    def new_taxa(self, taxa):
+        self.taxa = taxa
+        return self
             
             

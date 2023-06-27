@@ -1,6 +1,21 @@
 from keycloak import KeycloakAdmin, KeycloakOpenID
 from flask import current_app, session, redirect, url_for
 from functools import wraps
+from .exceptions import InvalidTokenError
+import jwt
+from flask import request
+
+def get_token_request():
+
+    headers = request.headers
+    if 'Authorization' not in headers.keys():
+        raise InvalidTokenError('Token não encontrado')
+    try:
+        access_token = headers['Authorization'].split(' ')[1]
+    except Exception as e:
+        raise InvalidTokenError(f'{e}')
+    return access_token 
+
 
 def get_admin():
     """
@@ -97,10 +112,13 @@ def login_required(f):
     """
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if 'access_token' in session:
-            if check_token(session['access_token']):
+        token = get_token_request()
+        try:
+            if is_valid(token):
                 return f(*args, **kwargs)
-        return redirect(url_for('login'))
+            return {'message': f'{e}'}, e.status_code
+        except Exception as e:
+            return {'message': f'{e}'}, e.status_code
     return decorated_function
 
 def delete_user(admin, username):
@@ -112,3 +130,21 @@ def delete_user(admin, username):
     admin.delete_user(username)
     return None
 
+def is_valid(token):
+    flag = decode_token(token)
+    
+    if flag:
+        return True
+    else:
+        return False
+
+def decode_token(access_token):
+    public_key = current_app.config['PUBLIC_KEY']
+    public_key = '-----BEGIN PUBLIC KEY-----\n' + public_key + '\n-----END PUBLIC KEY-----'
+    
+    try:
+        token_decodificadao = jwt.decode(access_token,public_key,audience=['Currency', 'Currency-converter', 'account'], algorithms=['RS256'])
+        return token_decodificadao
+    except Exception as e:
+        raise InvalidTokenError(f'{e}')
+    

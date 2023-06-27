@@ -30,3 +30,8 @@ class DevelopmentConfig(Config):
     ADMIN_PASS = os.getenv("ADMIN_PASS")
     PUBLIC_KEY = os.getenv("PUBLIC_KEY")
 
+    MAIL_SERVER = 'smtp.gmail.com'
+    MAIL_PORT = 587
+    MAIL_USE_TLS = True
+    MAIL_USERNAME = 'mmedinac26@gmail.com'
+    MAIL_PASSWORD = 'a+320Copiloto'

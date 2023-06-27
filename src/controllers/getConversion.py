@@ -1,31 +1,37 @@
 from service.awesomeapi import Awesomeapi
 from resources.formaPagamento import FormaPagamento
 class GetConversion:
-    def __init__(self):
-        self.response = []
+    def __init__(self, currency_in, currency_out):
+        self.Moeda_de_origem = currency_in
+        self.Moeda_de_destino = currency_out
     
-    def convert_many(self, lista_currency, amount):
+    
+    def get_taxa_de_conversao(self):
         Aweapi = Awesomeapi()
-        conversão = Aweapi.convert_currency(lista_currency).response
-        cambio = {}
+        par_moedas = [self.Moeda_de_origem +'-'+self.Moeda_de_destino]
+        conversão = Aweapi.convert_currency(par_moedas).response
         for conv in conversão:
-            self.convertedAmount = float(conversão[conv]['bid']) * amount
-            cambio['convertedAmount'] = self.convertedAmount
-            cambio['Valor usado para conversão'] = conversão[conv]['bid']
-            self.response.append(cambio)
-        
-        
+            self.taxa_conversão = conversão[conv]['bid']
         return self
     
-    def total_a_pagar(self, convertedAmount, tipoPagamento):
+    def get_valor_comprado(self, amount):
+        self.valor_comprado = float(self.taxa_conversão) * amount
+        return self
+    
+    
+    def total_a_pagar(self, tipoPagamento, amount):
   
-        if tipoPagamento == 1:
+        if tipoPagamento == 'CARTAO_CRED':
             formaPagamento = FormaPagamento.pagamento_cartao_credito()
-        else:
+        elif tipoPagamento == 'BOLETO':
             formaPagamento = FormaPagamento.pagamento_boleto()
+        else:
+            raise Exception('Forma de pagamento não encontrada')
+        
+        
         total = 0
 
-        for conv in [self.convertedAmount]:
+        for conv in [amount]:
             if conv < 3000:
                 taxa_conversão = conv * 0.02
             else:
@@ -33,14 +39,19 @@ class GetConversion:
             taxa_pagamento = conv * formaPagamento.taxa   
             total += conv - taxa_conversão - taxa_pagamento
 
-        return {'total a pagar': total, 'taxa de conversão': taxa_conversão, 'taxa de pagamento': taxa_pagamento, 'forma de pagamento': formaPagamento.forma_de_pagamento.name}
+        self.total = total
+        self.taxa_conversão = taxa_conversão
+        self.taxa_pagamento = taxa_pagamento
+        self.formaPagamento = formaPagamento.forma_de_pagamento.name
+        return self
     
-    def getConversion(self, lista_currency, amount, tipoPagamento):
+    def getConversion(self, amount, tipoPagamento):
+
         
-        self.convert_many(lista_currency, amount)
-        
-        self.total = self.total_a_pagar(self.convertedAmount, tipoPagamento)
-        
-        
+        self.total_a_pagar(tipoPagamento, amount)
         
         return self
+        
+    
+    def get_response(self):
+        return vars(self)
